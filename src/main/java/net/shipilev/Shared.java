@@ -4,7 +4,7 @@ public class Shared {
 
     public static final int SLICES = 1000000;
     public static final int ITERS = 100;
-    public static final int THREADS = Runtime.getRuntime().availableProcessors();
+    public static final int THREADS = 4;
 
     public static double calculatePi(int sliceNr) {
         double acc = 0.0;

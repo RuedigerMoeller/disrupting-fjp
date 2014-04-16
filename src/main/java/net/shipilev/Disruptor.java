@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(5)
+@Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
+@Fork(3)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class Disruptor {
@@ -133,4 +133,13 @@ public class Disruptor {
         return res.result;
     }
 
+    public static void main( String arg[] ) throws InterruptedException {
+        while ( true ) {
+            final Disruptor dis = new Disruptor();
+            dis.setup();
+            long tim = System.currentTimeMillis();
+            dis.run();
+            System.out.println("Time:"+(System.currentTimeMillis()-tim));
+        }
+    }
 }

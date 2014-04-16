@@ -13,11 +13,12 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(5)
+@Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
+@Fork(3)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class ForkJoinRecursiveDeep {
@@ -28,6 +29,7 @@ public class ForkJoinRecursiveDeep {
      */
 
     static class PiForkJoinTask extends RecursiveTask<Double> {
+        static AtomicInteger computed = new AtomicInteger(0);
         private final int slices;
 
         public PiForkJoinTask(int slices) {
@@ -41,6 +43,7 @@ public class ForkJoinRecursiveDeep {
                 for (int s = 0; s < slices; s++) {
                     acc += Shared.calculatePi(s);
                 }
+                computed.incrementAndGet();
                 return acc;
             }
 
@@ -58,6 +61,17 @@ public class ForkJoinRecursiveDeep {
     @GenerateMicroBenchmark
     public double run() throws InterruptedException {
         return new PiForkJoinTask(Shared.SLICES).invoke();
+    }
+
+    public static void main( String arg[] ) throws InterruptedException {
+        while ( true ) {
+            PiForkJoinTask.computed.set(0);
+            long tim = System.currentTimeMillis();
+            final ForkJoinRecursiveDeep dis = new ForkJoinRecursiveDeep();
+//            dis.setup();
+            dis.run();
+            System.out.println("Time:"+(System.currentTimeMillis()-tim)+" "+PiForkJoinTask.computed.get());
+        }
     }
 
 }

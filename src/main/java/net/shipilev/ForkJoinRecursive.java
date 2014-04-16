@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(5)
+@Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
+@Fork(3)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class ForkJoinRecursive {
@@ -58,6 +58,16 @@ public class ForkJoinRecursive {
     @GenerateMicroBenchmark
     public double run() throws InterruptedException {
         return new PiForkJoinTask(Shared.SLICES).invoke();
+    }
+
+    public static void main( String arg[] ) throws InterruptedException {
+        while ( true ) {
+            long tim = System.currentTimeMillis();
+            final ForkJoinRecursive dis = new ForkJoinRecursive();
+//            dis.setup();
+            dis.run();
+            System.out.println("Time:"+(System.currentTimeMillis()-tim));
+        }
     }
 
 }
