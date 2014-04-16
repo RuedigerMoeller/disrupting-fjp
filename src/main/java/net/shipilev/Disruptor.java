@@ -96,7 +96,7 @@ public class Disruptor {
         PiEventFac fac = new PiEventFac();
         executor = Executors.newCachedThreadPool();
         disruptor = new com.lmax.disruptor.dsl.Disruptor<PiJob>(fac, 16384, executor, ProducerType.SINGLE, new SleepingWaitStrategy());
-        PiEventProcessor procs[] = new PiEventProcessor[Shared.THREADS];
+        PiEventProcessor procs[] = new PiEventProcessor[getThreads()];
         res = new PiResultReclaimer(Shared.SLICES);
 
         for (int i = 0; i < procs.length; i++) {
@@ -126,11 +126,15 @@ public class Disruptor {
             piJob.partitionId = partitionId;
             ringBuffer.publish(seq);
 
-            partitionId = (partitionId == (Shared.THREADS - 1)) ? 0 : partitionId + 1;
+            partitionId = (partitionId == (getThreads() - 1)) ? 0 : partitionId + 1;
         }
 
         res.latch.await();
         return res.result;
+    }
+
+    private static int getThreads() {
+        return Shared.THREADS-1;
     }
 
     public static void main( String arg[] ) throws InterruptedException {
@@ -138,7 +142,7 @@ public class Disruptor {
             final Disruptor dis = new Disruptor();
             dis.setup();
             long tim = System.currentTimeMillis();
-            dis.run();
+            System.out.println(dis.run());
             System.out.println("Time:"+(System.currentTimeMillis()-tim));
         }
     }

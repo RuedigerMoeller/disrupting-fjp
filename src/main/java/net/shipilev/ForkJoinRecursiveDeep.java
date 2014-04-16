@@ -10,6 +10,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
@@ -29,28 +30,26 @@ public class ForkJoinRecursiveDeep {
      */
 
     static class PiForkJoinTask extends RecursiveTask<Double> {
-        static AtomicInteger computed = new AtomicInteger(0);
         private final int slices;
+        private final int slicesOffset;
 
-        public PiForkJoinTask(int slices) {
+        public PiForkJoinTask(int slices, int offset) {
             this.slices = slices;
+            this.slicesOffset = offset;
         }
 
         @Override
         protected Double compute() {
-            if (slices <= 1) {
-                double acc = 0D;
-                for (int s = 0; s < slices; s++) {
-                    acc += Shared.calculatePi(s);
-                }
-                computed.incrementAndGet();
-                return acc;
+            if ( slices == 0 )
+                return 0.0;
+            if (slices == 1) {
+                return Shared.calculatePi(slicesOffset);
             }
 
             int lslices = slices / 2;
             int rslices = slices - lslices;
-            PiForkJoinTask t1 = new PiForkJoinTask(lslices);
-            PiForkJoinTask t2 = new PiForkJoinTask(rslices);
+            PiForkJoinTask t1 = new PiForkJoinTask(lslices,slicesOffset);
+            PiForkJoinTask t2 = new PiForkJoinTask(rslices,lslices+slicesOffset);
 
             ForkJoinTask.invokeAll(t1, t2);
 
@@ -60,17 +59,34 @@ public class ForkJoinRecursiveDeep {
 
     @GenerateMicroBenchmark
     public double run() throws InterruptedException {
-        return new PiForkJoinTask(Shared.SLICES).invoke();
+        return pool.invoke(new PiForkJoinTask(Shared.SLICES,0));
     }
 
-    public static void main( String arg[] ) throws InterruptedException {
-        while ( true ) {
-            PiForkJoinTask.computed.set(0);
-            long tim = System.currentTimeMillis();
-            final ForkJoinRecursiveDeep dis = new ForkJoinRecursiveDeep();
-//            dis.setup();
-            dis.run();
-            System.out.println("Time:"+(System.currentTimeMillis()-tim)+" "+PiForkJoinTask.computed.get());
+    static ForkJoinPool pool;
+    public static void main(String arg[] ) throws InterruptedException {
+        int numSlice = 1000000;
+        int numIter = 100;
+
+        int NUM_CORE = 4;
+        String res[] = new String[NUM_CORE];
+        for ( int i = 1; i <= NUM_CORE; i++ ) {
+            long sum = 0;
+            System.out.println("--------------------------");
+            pool = new ForkJoinPool(i);
+            for ( int ii = 0; ii < 20; ii++ ) {
+                long tim = System.currentTimeMillis();
+                final ForkJoinRecursiveDeep dis = new ForkJoinRecursiveDeep();
+                System.out.println(dis.run());
+                long t = System.currentTimeMillis()-tim;
+                if ( ii >= 10 )
+                    sum += t;
+            }
+            res[i-1] = i+": "+(sum/10);
+            pool.shutdown();
+        }
+        for (int i = 0; i < res.length; i++) {
+            String re = res[i];
+            System.out.println(re);
         }
     }
 

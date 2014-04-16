@@ -65,7 +65,7 @@ public class ForkJoinRecursive {
             long tim = System.currentTimeMillis();
             final ForkJoinRecursive dis = new ForkJoinRecursive();
 //            dis.setup();
-            dis.run();
+            System.out.println(dis.run());
             System.out.println("Time:"+(System.currentTimeMillis()-tim));
         }
     }
