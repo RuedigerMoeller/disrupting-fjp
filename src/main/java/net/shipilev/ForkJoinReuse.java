@@ -13,9 +13,7 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveTask;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -70,4 +68,43 @@ public class ForkJoinReuse {
         return acc;
     }
 
+    static ForkJoinPool pool;
+    public static void main(String arg[] ) throws InterruptedException, ExecutionException {
+        int NUM_CORE = 4;
+        String res[] = new String[NUM_CORE];
+        for ( int i = 1; i <= NUM_CORE; i++ ) {
+            long sum = 0;
+            System.out.println("--------------------------");
+            pool = new ForkJoinPool(i);
+            for ( int ii = 0; ii < 20; ii++ ) {
+                long tim = System.currentTimeMillis();
+                final ForkJoinReuse dis = new ForkJoinReuse();
+                ForkJoinTask<Double> submit = pool.submit(
+                        new Callable<Double>() {
+                            @Override
+                            public Double call() {
+                                try {
+                                    return dis.run();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                return null;
+                            }
+                        }
+                );
+                Double aDouble = submit.get();
+                long t = System.currentTimeMillis()-tim;
+                System.out.println("pi "+ aDouble +" t "+t);
+                if ( ii >= 10 )
+                    sum += t;
+            }
+            res[i-1] = i+": "+(sum/10);
+            pool.shutdown();
+        }
+        for (int i = 0; i < res.length; i++) {
+            String re = res[i];
+            System.out.println(re);
+        }
+    }
+    
 }
